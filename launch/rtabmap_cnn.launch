@@ -1,0 +1,18 @@
+<launch>
+
+  <node pkg="rtabmap_ros" type="rgbd_odometry" name="rgb_odometry">
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_camera" args="0 0 0 0 0 0 base_link camera_link 100">
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_scan" args="0 0 0 0 0 0 base_link base_scan 100">
+  </node>
+
+  <node pkg="rtabmap_ros" type="rtabmap" name="rtabmap">
+  </node>
+
+  <node pkg="tx2_fcnn_node" type="tx2_fcnn_node" name="tx2_fcnn_node">
+  </node>
+
+</launch>
