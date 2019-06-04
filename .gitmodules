@@ -1,0 +1,3 @@
+[submodule "fcrn-inference"]
+      path = Thirdparty
+      url = git://github.com/CnnDepth/fcrn-inference.git
