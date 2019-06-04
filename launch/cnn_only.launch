@@ -1,0 +1,12 @@
+<launch>
+
+  <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_camera" args="0 0 0 -1.5707963267948966 0 -1.5707963267948966 base_link camera_link 100">
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_scan" args="0 0 0 -1.5707963267948966 0 -1.5707963267948966 base_link base_scan 100">
+  </node>
+
+  <node pkg="tx2_fcnn_node" type="tx2_fcnn_node" name="tx2_fcnn_node">
+  </node>
+
+</launch>
