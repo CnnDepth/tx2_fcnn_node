@@ -59,7 +59,7 @@ int main( int argc, char** argv )
 
   ROS_INFO("Starting tx2_fcnn_node...");
 //===========================
-  gstCamera* camera = gstCamera::Create( 320, 240, -1 );
+  gstCamera* camera = gstCamera::Create( 640, 480, -1 );
   
   if( !camera )
   {
@@ -73,8 +73,8 @@ int main( int argc, char** argv )
   ROS_INFO( "    height: %d", camera->GetHeight() );
   ROS_INFO( "     depth: %d", camera->GetPixelDepth() );
 
-  std::ifstream engineModel( "/media/sd/kmouraviev/engines/nonbt_engine_shortcuts_320x240.trt", std::ios::binary );
-
+//  std::ifstream engineModel( "/media/sd/kmouraviev/engines/nonbt_engine_shortcuts_320x240.trt", std::ios::binary );
+  std::ifstream engineModel( "/media/sd/kmouraviev/engines/trt_engine_fullsize_5x5.trt" );
   std::vector<unsigned char> buffer( std::istreambuf_iterator<char>( engineModel ), {} );
   std::size_t modelSize = buffer.size() * sizeof( unsigned char );
 
@@ -174,8 +174,8 @@ int main( int argc, char** argv )
   sensor_msgs::CameraInfo ciMsg;
   ciMsg.header = std_msgs::Header();
   ciMsg.header.frame_id = "camera_link";
-  ciMsg.height = 240;
-  ciMsg.width  = 320;
+  ciMsg.height = 480;
+  ciMsg.width  = 640;
   ciMsg.distortion_model = "plumb_bob";
 //  double distor[5] = {0.262383, -0.953104, -0.005358, 0.002628, 1.163314};
 //  ciMsg.D = {0.262383, -0.953104, -0.005358, 0.002628, 1.163314};
@@ -195,8 +195,8 @@ int main( int argc, char** argv )
   sensor_msgs::CameraInfo diMsg;
   diMsg.header = std_msgs::Header();
   diMsg.header.frame_id = "base_scan";
-  diMsg.height = 240;
-  diMsg.width  = 320;
+  diMsg.height = 480;
+  diMsg.width  = 640;
   diMsg.distortion_model = "plumb_bob";
 //  double distor[5] = {0.262383, -0.953104, -0.005358, 0.002628, 1.163314};
   diMsg.D = {0.11754636857648042, -0.20796214251890827, 0.003951824147288686, 0.0011981225998639721, 0.0};
@@ -269,7 +269,7 @@ int main( int argc, char** argv )
 
     const float3 mean_value = make_float3( 123.0, 115.0, 101.0 );
 
-    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, 320, 240, (float*)imgRGB, 320, 240, mean_value, stream ) ) )
+    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, 640, 480, (float*)imgRGB, 640, 480, mean_value, stream ) ) )
     {
       ROS_ERROR( "Failed to preprocess" );
 
