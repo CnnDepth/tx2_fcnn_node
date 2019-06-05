@@ -1,3 +1,7 @@
 [submodule "Thirdparty/fcrn-inference"]
 	path = Thirdparty/fcrn-inference
 	url = https://github.com/CnnDepth/fcrn-inference.git
+
+[submodule "Thirdparty/fcrn-inference/jetson-utils"]
+        path = Thirdparty/fcrn-inference/jetson-utils
+        url = https://github.com/dusty-nv/jetson-utils/tree/2fb2b9dfd8323f99c22d3e2755b88345abd2f3a8

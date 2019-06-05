@@ -5,9 +5,9 @@ project(tx2_fcnn_node)
 add_compile_options(-std=c++11)
 
 set(PROJECT_OUTPUT_DIR  ${PROJECT_BINARY_DIR}/)
-set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/aarch64/include)
+set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/x86_64/include ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/aarch64/include/)
 
-add_subdirectory( Thirdparty )
+add_subdirectory( Thirdparty/fcrn-inference )
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -15,23 +15,12 @@ add_subdirectory( Thirdparty )
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-#  OpenCV 3.4 REQUIRED
   cv_bridge
   image_transport
 )
 
-#set(OpenCV_DIR /home/abokovoy/.local/)
-
-find_package(
-  OpenCV REQUIRED
-  NO_MODULE
-  PATHS /home/avbokovoy/.local
-  NO_DEFAULT_PATH
-)
-
+find_package( OpenCV REQUIRED )
 find_package( CUDA REQUIRED )
-
-#include_directories(${PROJECT_INCLUDE_DIR} ${GIE_PATH}/include)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -142,11 +131,15 @@ include_directories(
   ${CUDA_INCLUDE_DIRS}
   ${PROJECT_INCLUDE_DIR}
   ${GIE_PATH}/include
+  /usr/lib/x86_64-linux-gnu/gstreamer-1.0
+  /usr/lib/x86_64-linux-gnu/gstreamer-1.0/include
   /usr/include/gstreamer-1.0 
   /usr/lib/aarch64-linux-gnu/gstreamer-1.0/include 
   /usr/include/glib-2.0 
+  /usr/lib/x86_64-linux-gnu/glib-2.0/include/
   /usr/include/libxml2 
   /usr/lib/aarch64-linux-gnu/glib-2.0/include/
+  
 )
 
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -186,10 +179,8 @@ add_executable(${PROJECT_NAME} src/tx2_fcnn_node.cpp src/ros_utils.cpp src/fcrn_
    ${CUDA_LIBRARIES}
    jetson-utils
    fcrn-camera
-   jetson-inference
    nvinfer
-#   opencv_videoio
-#   opencv_highgui
+   nvcaffe_parser
  )
 
 #############
