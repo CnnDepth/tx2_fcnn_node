@@ -7,7 +7,7 @@ add_compile_options(-std=c++11)
 set(PROJECT_OUTPUT_DIR  ${PROJECT_BINARY_DIR}/)
 set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/aarch64/include)
 
-add_subdirectory( Thirdparty )
+add_subdirectory( Thirdparty/fcrn-inference )
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
