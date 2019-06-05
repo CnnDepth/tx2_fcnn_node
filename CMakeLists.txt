@@ -15,23 +15,13 @@ add_subdirectory( Thirdparty )
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-#  OpenCV 3.4 REQUIRED
   cv_bridge
   image_transport
 )
 
-#set(OpenCV_DIR /home/abokovoy/.local/)
-
-find_package(
-  OpenCV REQUIRED
-  NO_MODULE
-  PATHS /home/avbokovoy/.local
-  NO_DEFAULT_PATH
-)
-
+find_package( OpenCV REQUIRED )
 find_package( CUDA REQUIRED )
 
-#include_directories(${PROJECT_INCLUDE_DIR} ${GIE_PATH}/include)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -188,8 +178,6 @@ add_executable(${PROJECT_NAME} src/tx2_fcnn_node.cpp src/ros_utils.cpp src/fcrn_
    fcrn-camera
    jetson-inference
    nvinfer
-#   opencv_videoio
-#   opencv_highgui
  )
 
 #############
