@@ -13,7 +13,9 @@
 #include <cudaUtility.h>
 #include <cudaRGB.h>
 
-#include "../Thirdparty/fcrn-camera/upsampling/plugin.h"
+#include "slicePlugin.h"
+#include "interleavingPlugin.h"
+#include "upsamplingPlugin.h"
 
 #include <iostream>
 #include <opencv2/highgui.hpp>
@@ -35,6 +37,16 @@ cudaError_t cudaPreImageNetMean(float4* input, size_t inputWidth, size_t inputHe
 PluginFieldCollection NearestNeighborUpsamplingPluginCreator::mFC{};
 std::vector<PluginField> NearestNeighborUpsamplingPluginCreator::mPluginAttributes;
 REGISTER_TENSORRT_PLUGIN( NearestNeighborUpsamplingPluginCreator );
+
+PluginFieldCollection StridedSlicePluginCreator::mFC{};
+std::vector<PluginField> StridedSlicePluginCreator::mPluginAttributes;
+REGISTER_TENSORRT_PLUGIN( StridedSlicePluginCreator );
+
+PluginFieldCollection InterleavingPluginCreator::mFC{};
+std::vector<PluginField> InterleavingPluginCreator::mPluginAttributes;
+REGISTER_TENSORRT_PLUGIN( InterleavingPluginCreator );
+
+
 
 int main( int argc, char** argv )
 {
