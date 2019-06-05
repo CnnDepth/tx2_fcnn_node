@@ -15,8 +15,9 @@ ROS node for real-time FCNN-based depth reconstruction (as in paper TODO: add ur
 4) CUDNN + CuBLAS
 5) GStreamer-1.0
 6) glib2.0
+
 *Optional:*
-7) RTAB-MAP
+* RTAB-MAP
 
 ## Compile
 
