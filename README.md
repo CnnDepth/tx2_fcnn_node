@@ -15,6 +15,8 @@ ROS node for real-time FCNN-based depth reconstruction (as in paper TODO: add ur
 4) CUDNN + CuBLAS
 5) GStreamer-1.0
 6) glib2.0
+*Optional:*
+7) RTAB-MAP
 
 ## Compile
 
@@ -22,7 +24,7 @@ Assuming you already have ROS and CUDA related tools installed
 
 1) Install remaining pre-requesites:
 
-```console
+```bash
 $ sudo apt-get update
 $ sudo apt-get install -y libqt4-dev qt4-dev-tools \ 
        libglew-dev glew-utils libgstreamer1.0-dev \ 
@@ -33,7 +35,7 @@ $ sudo apt-get install -y libopencv-calib3d-dev libopencv-dev
 
 2) Navigate to your catkin workspace and clone the repository:
 
-```console
+```bash
 $ git clone https://github.com/CnnDepth/tx2_fcnn_node.git
 $ cd tx2_fcnn_node && git submodule update --init --recursive
 ```
@@ -42,14 +44,14 @@ $ cd tx2_fcnn_node && git submodule update --init --recursive
 
 Navigate to catkin workspace folder.
 
-*On jetson:*
+**On jetson:**
 
 ```console 
 $ catkin_make
 ```
 
-*On x86_64 PC*
-```console
+**On x86_64 PC**
+```bash
 $ catkin_make --cmake-args -DPATH_TO_TENOSRRT_LIB=/usr/lib/x86_64-linux-gnu \ 
               -DPATH_TO_TENSORRT_INCLUDE=/usr/include -DPATH_TO_CUDNN=/usr/lib/x86_64-linux-gnu \ 
               -DPATH_TO_CUBLAS=/usr/lib/x86_64-linux-gnu
@@ -59,12 +61,12 @@ Change the paths accordingly.
 
 4) Run:
 
-```console
+```bash
 $ roslaunch tx2_fcnn_node cnn_only.launch
 ```
 
 or with RTAB-MAP
 
-```console
+```bash
 $ roslaunch tx2_fcnn_node rtabmap_cnn.launch
 ```
