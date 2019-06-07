@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   cv_bridge
   image_transport
+  camera_calibration_parsers
 )
 
 find_package( OpenCV REQUIRED )
@@ -137,7 +138,7 @@ include_directories(
   /usr/lib/aarch64-linux-gnu/gstreamer-1.0/include 
   /usr/include/glib-2.0 
   /usr/lib/x86_64-linux-gnu/glib-2.0/include/
-  /usr/include/libxml2 
+#  /usr/include/libxml2 
   /usr/lib/aarch64-linux-gnu/glib-2.0/include/
   
 )

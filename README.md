@@ -54,7 +54,7 @@ $ catkin_make
 
 **On x86_64 PC**
 ```bash
-$ catkin_make --cmake-args -DPATH_TO_TENOSRRT_LIB=/usr/lib/x86_64-linux-gnu \ 
+$ catkin_make --cmake-args -DPATH_TO_TENSORRT_LIB=/usr/lib/x86_64-linux-gnu \ 
               -DPATH_TO_TENSORRT_INCLUDE=/usr/include -DPATH_TO_CUDNN=/usr/lib/x86_64-linux-gnu \ 
               -DPATH_TO_CUBLAS=/usr/lib/x86_64-linux-gnu
 ```
