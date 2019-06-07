@@ -72,3 +72,33 @@ or with RTAB-MAP
 ```bash
 $ roslaunch tx2_fcnn_node rtabmap_cnn.launch
 ```
+## Run in a container
+
+1) Build image:
+```bash
+$ cd docker
+$ docker build . -t rt-ros-docker
+```
+2) Run an image:
+```bash
+$ nvidia-docker run -device=/dev/video0:/dev/video0 -it --rm rt-ros-docker
+```
+3) Create ros workspace:
+```bash
+$ mkdir -p catkin_ws/src && cd catkin_ws/src
+$ catkin_init_workspace
+$ cd ..
+$ catkin_make
+$ source devel/setup.bash
+```
+4) Build tx2_fcnn_node:
+```bash
+$ cd src
+$ git clone https://github.com/CnnDepth/tx2_fcnn_node.git
+$ cd tx2_fcnn_node && git submodule update --init --recursive
+$ catkin_make
+```
+5) Run the node:
+```bash
+rosrun tx2_fcnn_node tx2_fcnn_node
+```
