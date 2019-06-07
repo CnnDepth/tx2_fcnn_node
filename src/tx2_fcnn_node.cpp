@@ -1,8 +1,10 @@
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <std_msgs/Float64.h>
+#include <camera_calibration_parsers/parse.h>
 
 #include <chrono>
 #include <fstream>
@@ -25,6 +27,8 @@
 #define DIMS_C(x) x.d[0]
 #define DIMS_H(x) x.d[1]
 #define DIMS_W(x) x.d[2]
+
+const std::string PACKAGE_NAME = "tx2_fcnn_node";
 
 const int DEFAULT_CAMERA_HEIGHT = 240;
 const int DEFAULT_CAMERA_WIDTH  = 320;
@@ -51,7 +55,7 @@ REGISTER_TENSORRT_PLUGIN( InterleavingPluginCreator );
 
 int main( int argc, char** argv )
 {
-  ros::init(argc, argv, "tx2_fcnn_node");
+  ros::init(argc, argv, PACKAGE_NAME);
   ros::NodeHandle nh("~");
 
 
@@ -77,10 +81,22 @@ int main( int argc, char** argv )
   ROS_INFO( "    height: %d", camera->GetHeight() );
   ROS_INFO( "     depth: %d", camera->GetPixelDepth() );
 
-//  std::ifstream engineModel( "/media/sd/kmouraviev/engines/nonbt_engine_shortcuts_320x240.trt", std::ios::binary );
-  std::ifstream engineModel( "/media/sd/kmouraviev/engines/trt_engine_fullsize_5x5.trt" );
+  std::string engineFile;
+  nh.param<std::string>( "engine", engineFile, "test_engine.trt" );
+
+
+  std::ifstream engineModel( std::string( ros::package::getPath( PACKAGE_NAME ) ) + "/engine/" + engineFile );
+  if( !engineModel )
+  {
+    ROS_ERROR( "Failed to open engine file" );
+
+    return -1;
+  }
+
   std::vector<unsigned char> buffer( std::istreambuf_iterator<char>( engineModel ), {} );
   std::size_t modelSize = buffer.size() * sizeof( unsigned char );
+
+
 
   nvinfer1::IRuntime* runtime          = nvinfer1::createInferRuntime( gLogger );
   nvinfer1::ICudaEngine* engine        = runtime->deserializeCudaEngine( buffer.data(), modelSize, nullptr );
@@ -93,7 +109,10 @@ int main( int argc, char** argv )
     return -1;
   }
 
-  const int inputIndex     = engine->getBindingIndex( "tf/Placeholder" );
+  std::string inputName;
+  nh.param<std::string>( "input_index", inputName, "tf/Placeholder" );
+
+  const int inputIndex     = engine->getBindingIndex( inputName.c_str() );
   nvinfer1::Dims inputDims = engine->getBindingDimensions( inputIndex );
 
   std::size_t inputSize      = DIMS_C( inputDims ) * DIMS_H( inputDims ) * DIMS_W( inputDims ) * sizeof(float);
@@ -102,7 +121,10 @@ int main( int argc, char** argv )
   float* outImageCPU  = nullptr;
   float* outImageCUDA = nullptr;
 
-  const int outputIndex     = engine->getBindingIndex( "tf/Reshape" );
+  std::string outputName;
+  nh.param<std::string>( "output_index", outputName, "tf/Reshape" );
+
+  const int outputIndex     = engine->getBindingIndex( outputName.c_str() );
   nvinfer1::Dims outputDims = engine->getBindingDimensions( outputIndex );
   std::size_t outputSize    = DIMS_C( outputDims ) * DIMS_H( outputDims ) * DIMS_W( outputDims ) * sizeof(float);
 
@@ -139,43 +161,37 @@ int main( int argc, char** argv )
   void* dividedDepthCPU = NULL;
   if( !cudaAllocMapped((void**)&dividedDepthCPU, (void**)&dividedDepth, outputSize) )
   {
-    ROS_ERROR("failed to alloc CUDA mapped memory for RGB image, %zu bytes\n");
+    ROS_ERROR("failed to alloc CUDA mapped memory for RGB image\n");
     return false;
   }
 
 
-  if( !camera->Open() )
-  {
-    ROS_ERROR( "Failed to open camera" );
+//  if( !camera->Open() )
+//  {
+//    ROS_ERROR( "Failed to open camera" );
 
-    return -1;
-  }
+//    return -1;
+//  }
+
+  std::string calibFile;
+  nh.param<std::string>( "calib_file", calibFile, "tx2_camera_calib.yaml" );
+
+  
+  
 
   ros::Publisher ciPub = nh.advertise<sensor_msgs::CameraInfo>( "/rgb/camera_info", 1 );
   sensor_msgs::CameraInfo ciMsg;
+  std::string cameraName;
+  camera_calibration_parsers::readCalibration( ros::package::getPath( PACKAGE_NAME ) + "/calib/" + calibFile, cameraName, ciMsg );
+
   ciMsg.header = std_msgs::Header();
   ciMsg.header.frame_id = "camera_link";
-  ciMsg.height = 480;
-  ciMsg.width  = 640;
-  ciMsg.distortion_model = "plumb_bob";
-  ciMsg.D = {0.11754636857648042, -0.20796214251890827, 0.003951824147288686, 0.0011981225998639721, 0.0};
-  ciMsg.K = {239.12800192487694, 0.0, 164.5580937136966, 0.0, 319.0746579524651, 121.00594783717585, 0.0, 0.0, 1.0};
-  ciMsg.R = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-  ciMsg.P = { 241.8467254638672, 0.0, 165.24418493136181, 0.0, 0.0, 324.6019287109375, 121.7070042868836, 0.0, 0.0, 0.0, 1.0, 0.0 };
-
 
   ros::Publisher diPub = nh.advertise<sensor_msgs::CameraInfo>( "/depth/camera_info", 1 );
-  sensor_msgs::CameraInfo diMsg;
+  sensor_msgs::CameraInfo diMsg = ciMsg;
+
   diMsg.header = std_msgs::Header();
   diMsg.header.frame_id = "base_scan";
-  diMsg.height = 480;
-  diMsg.width  = 640;
-  diMsg.distortion_model = "plumb_bob";
-  diMsg.D = {0.11754636857648042, -0.20796214251890827, 0.003951824147288686, 0.0011981225998639721, 0.0};
-  diMsg.K = {239.12800192487694, 0.0, 164.5580937136966, 0.0, 319.0746579524651, 121.00594783717585, 0.0, 0.0, 1.0};
-  diMsg.R = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-  diMsg.P = { 241.8467254638672, 0.0, 165.24418493136181, 0.0, 0.0, 324.6019287109375, 121.7070042868836, 0.0, 0.0, 0.0, 1.0, 0.0 };
-  
 
 
   image_transport::ImageTransport it(nh);
@@ -214,7 +230,7 @@ int main( int argc, char** argv )
 
     const float3 mean_value = make_float3( 123.0, 115.0, 101.0 );
 
-    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, 640, 480, (float*)imgRGB, 640, 480, mean_value, stream ) ) )
+    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, camera->GetWidth(), camera->GetHeight(), (float*)imgRGB, camera->GetWidth(), camera->GetHeight(), mean_value, stream ) ) )
     {
       ROS_ERROR( "Failed to preprocess" );
 
@@ -229,9 +245,6 @@ int main( int argc, char** argv )
     sensor_msgs::ImagePtr depthMsg = cv_bridge::CvImage( std_msgs::Header(), sensor_msgs::image_encodings::TYPE_32FC1, outDepth ).toImageMsg();
 
     ros::Time timestamp = ros::Time::now();
-
-    msg->header.frame_id = "camera_link";
-    depthMsg->header.frame_id = "base_scan";
 
     msg->header.stamp = timestamp;
     pub.publish(msg);

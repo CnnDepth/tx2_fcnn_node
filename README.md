@@ -29,7 +29,8 @@ Assuming you already have ROS and CUDA related tools installed
 $ sudo apt-get update
 $ sudo apt-get install -y libqt4-dev qt4-dev-tools \ 
        libglew-dev glew-utils libgstreamer1.0-dev \ 
-       libgstreamer-plugins-base1.0-dev libglib2.0-dev
+       libgstreamer-plugins-base1.0-dev libglib2.0-dev \
+       libgstreamer-plugins-good
 $ sudo apt-get install -y libopencv-calib3d-dev libopencv-dev 
 
 ```
@@ -53,7 +54,7 @@ $ catkin_make
 
 **On x86_64 PC**
 ```bash
-$ catkin_make --cmake-args -DPATH_TO_TENOSRRT_LIB=/usr/lib/x86_64-linux-gnu \ 
+$ catkin_make --cmake-args -DPATH_TO_TENSORRT_LIB=/usr/lib/x86_64-linux-gnu \ 
               -DPATH_TO_TENSORRT_INCLUDE=/usr/include -DPATH_TO_CUDNN=/usr/lib/x86_64-linux-gnu \ 
               -DPATH_TO_CUBLAS=/usr/lib/x86_64-linux-gnu
 ```
