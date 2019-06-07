@@ -26,7 +26,8 @@
 #define DIMS_H(x) x.d[1]
 #define DIMS_W(x) x.d[2]
 
-const int DEFAULT_CAMERA_HEIGHT = 640;
+const int DEFAULT_CAMERA_HEIGHT = 240;
+const int DEFAULT_CAMERA_WIDTH  = 320;
 
 Logger gLogger;
 
@@ -51,16 +52,18 @@ REGISTER_TENSORRT_PLUGIN( InterleavingPluginCreator );
 int main( int argc, char** argv )
 {
   ros::init(argc, argv, "tx2_fcnn_node");
-  ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
 
 
   int inputCameraHeight;
   int inputCameraWidth;
-  ros::param::param<int>( "camera_height", inputCameraHeight, DEFAULT_CAMERA_HEIGHT );
+  nh.param<int>( "camera_height", inputCameraHeight, DEFAULT_CAMERA_HEIGHT );
+  nh.param<int>( "camera_width", inputCameraWidth, DEFAULT_CAMERA_WIDTH );
+
 
   ROS_INFO("Starting tx2_fcnn_node...");
 //===========================
-  gstCamera* camera = gstCamera::Create( 640, 480, -1 );
+  gstCamera* camera = gstCamera::Create( inputCameraWidth, inputCameraHeight, -1 );
   
   if( !camera )
   {
