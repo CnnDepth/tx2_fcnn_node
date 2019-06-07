@@ -106,7 +106,10 @@ int main( int argc, char** argv )
     return -1;
   }
 
-  const int inputIndex     = engine->getBindingIndex( "tf/Placeholder" );
+  std::string inputName;
+  nh.param<std::string>( "input_index", inputName, "tf/Placeholder" );
+
+  const int inputIndex     = engine->getBindingIndex( inputName.c_str() );
   nvinfer1::Dims inputDims = engine->getBindingDimensions( inputIndex );
 
   std::size_t inputSize      = DIMS_C( inputDims ) * DIMS_H( inputDims ) * DIMS_W( inputDims ) * sizeof(float);
@@ -115,7 +118,10 @@ int main( int argc, char** argv )
   float* outImageCPU  = nullptr;
   float* outImageCUDA = nullptr;
 
-  const int outputIndex     = engine->getBindingIndex( "tf/Reshape" );
+  std::string outputName;
+  nh.param<std::string>( "output_index", outputName, "tf/Reshape" );
+
+  const int outputIndex     = engine->getBindingIndex( outputName.c_str() );
   nvinfer1::Dims outputDims = engine->getBindingDimensions( outputIndex );
   std::size_t outputSize    = DIMS_C( outputDims ) * DIMS_H( outputDims ) * DIMS_W( outputDims ) * sizeof(float);
 
