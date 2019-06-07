@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -77,10 +78,22 @@ int main( int argc, char** argv )
   ROS_INFO( "    height: %d", camera->GetHeight() );
   ROS_INFO( "     depth: %d", camera->GetPixelDepth() );
 
-//  std::ifstream engineModel( "/media/sd/kmouraviev/engines/nonbt_engine_shortcuts_320x240.trt", std::ios::binary );
-  std::ifstream engineModel( "/media/sd/kmouraviev/engines/trt_engine_fullsize_5x5.trt" );
+  std::string engineFile;
+  nh.param<std::string>( "engine", engineFile, "test_engine.trt" );
+
+
+  std::ifstream engineModel( std::string( ros::package::getPath( "tx2_fcnn_node" ) ) + "/engine/" + engineFile );
+  if( !engineModel )
+  {
+    ROS_ERROR( "Failed to open engine file" );
+
+    return -1;
+  }
+
   std::vector<unsigned char> buffer( std::istreambuf_iterator<char>( engineModel ), {} );
   std::size_t modelSize = buffer.size() * sizeof( unsigned char );
+
+
 
   nvinfer1::IRuntime* runtime          = nvinfer1::createInferRuntime( gLogger );
   nvinfer1::ICudaEngine* engine        = runtime->deserializeCudaEngine( buffer.data(), modelSize, nullptr );
