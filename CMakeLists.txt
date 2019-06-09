@@ -1,3 +1,6 @@
+#set(CMAKE_TOOLCHAIN_FILE /home/kirill/catkin_ws/src/toolchain.cmake)
+#set(CMAKE_C_COMPILER /usr/bin/gcc-6)
+#set(CMAKE_CXX_COMPILER /usr/bin/g++-6)
 cmake_minimum_required(VERSION 2.8.3)
 project(tx2_fcnn_node)
 
@@ -5,7 +8,7 @@ project(tx2_fcnn_node)
 add_compile_options(-std=c++11)
 
 set(PROJECT_OUTPUT_DIR  ${PROJECT_BINARY_DIR}/)
-set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/x86_64/include ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/aarch64/include/)
+set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/x86_64/include)
 
 add_subdirectory( Thirdparty/fcrn-inference )
 
@@ -15,13 +18,24 @@ add_subdirectory( Thirdparty/fcrn-inference )
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+#  OpenCV 3.4 REQUIRED
   cv_bridge
   image_transport
   camera_calibration_parsers
 )
 
-find_package( OpenCV REQUIRED )
+#set(OpenCV_DIR /home/abokovoy/.local/)
+
+find_package(
+  OpenCV REQUIRED
+  #NO_MODULE
+  #PATHS /usr/share/OpenCV
+  #NO_DEFAULT_PATH
+)
+
 find_package( CUDA REQUIRED )
+
+#include_directories(${PROJECT_INCLUDE_DIR} ${GIE_PATH}/include)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -132,15 +146,12 @@ include_directories(
   ${CUDA_INCLUDE_DIRS}
   ${PROJECT_INCLUDE_DIR}
   ${GIE_PATH}/include
-  /usr/lib/x86_64-linux-gnu/gstreamer-1.0
   /usr/lib/x86_64-linux-gnu/gstreamer-1.0/include
   /usr/include/gstreamer-1.0 
-  /usr/lib/aarch64-linux-gnu/gstreamer-1.0/include 
+  /usr/include/libxml2 
   /usr/include/glib-2.0 
-  /usr/lib/x86_64-linux-gnu/glib-2.0/include/
-#  /usr/include/libxml2 
-  /usr/lib/aarch64-linux-gnu/glib-2.0/include/
-  
+  /usr/lib/x86_64-linux-gnu/glib-2.0/include
+  /home/kirill/TensorRT-5.0.2.6/include
 )
 
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -180,8 +191,10 @@ add_executable(${PROJECT_NAME} src/tx2_fcnn_node.cpp src/ros_utils.cpp src/fcrn_
    ${CUDA_LIBRARIES}
    jetson-utils
    fcrn-camera
-   nvinfer
-   nvcaffe_parser
+   #jetson-inference
+   /home/kirill/TensorRT-5.0.2.6/lib/libnvinfer.so
+#   opencv_videoio
+#   opencv_highgui
  )
 
 #############
