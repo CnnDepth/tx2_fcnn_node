@@ -12,6 +12,48 @@ set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/x86_64/i
 
 add_subdirectory( Thirdparty/fcrn-inference )
 
+# find TensorRT package
+if ( NOT DEFINED PATH_TO_TENSORRT_LIB )
+  set(PATH_TO_TENSORRT_LIB /usr/lib/aarch64-linux-gnu)
+endif()
+if ( NOT DEFINED PATH_TO_TENSORRT_INCLUDE )
+  set(PATH_TO_TENSORRT_INCLUDE /usr/include/aarch64-linux-gnu)
+endif()
+message("TensorRT libraries path: ${PATH_TO_TENSORRT_LIB}")
+message("TensorRT includes path: ${PATH_TO_TENSORRT_INCLUDE}")
+
+if ( NOT EXISTS "${PATH_TO_TENSORRT_LIB}" )
+  message(FATAL_ERROR "TensorRT libraries not found. Set correct PATH_TO_TENSORRT_LIB")
+endif()
+if ( NOT EXISTS "${PATH_TO_TENSORRT_INCLUDE}" )
+  message(FATAL_ERROR "TensorRT includes not found. Set correct PATH_TO_TENSORRT_INCLUDE")
+endif()
+
+# find CuDNN
+if ( NOT DEFINED PATH_TO_CUDNN )
+  set( CUDNN_PATHS /usr/local/cuda/lib64 /usr/lib/aarch64-linux-gnu )
+  foreach(path ${CUDNN_PATHS})
+    if ( EXISTS ${path}/libcudnn.so )
+      set( PATH_TO_CUDNN ${path} )
+    endif()
+  endforeach()
+endif()
+if ( EXISTS ${PATH_TO_CUDNN}/libcudnn.so )
+  message("CuDNN found in ${PATH_TO_CUDNN}")
+else()
+  message("CuDNN not found. Set correct PATH_TO_CUDNN")
+endif()
+
+# find CuBLAS
+if ( NOT DEFINED PATH_TO_CUBLAS )
+  set( PATH_TO_CUBLAS /usr/local/cuda/lib64 )
+endif()
+if ( EXISTS ${PATH_TO_CUBLAS}/libcublas.so )
+  message("CuBLAS found in ${PATH_TO_CUBLAS}")
+else()
+  message("Could not find ${PATH_TO_CUBLAS}/libcublas.so. Set correct PATH_TO_CUBLAS")
+endif()
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -23,8 +65,6 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   camera_calibration_parsers
 )
-
-#set(OpenCV_DIR /home/abokovoy/.local/)
 
 find_package(
   OpenCV REQUIRED
@@ -147,11 +187,13 @@ include_directories(
   ${PROJECT_INCLUDE_DIR}
   ${GIE_PATH}/include
   /usr/lib/x86_64-linux-gnu/gstreamer-1.0/include
+  /usr/lib/aarch64-linux-gnu/gstreamer-1.0/include
   /usr/include/gstreamer-1.0 
   /usr/include/libxml2 
   /usr/include/glib-2.0 
   /usr/lib/x86_64-linux-gnu/glib-2.0/include
-  /home/kirill/TensorRT-5.0.2.6/include
+  /usr/lib/aarch64-linux-gnu/glib-2.0/include
+  ${PATH_TO_TENSORRT_INCLUDE}
 )
 
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -191,10 +233,7 @@ add_executable(${PROJECT_NAME} src/tx2_fcnn_node.cpp src/ros_utils.cpp src/fcrn_
    ${CUDA_LIBRARIES}
    jetson-utils
    fcrn-camera
-   #jetson-inference
-   /home/kirill/TensorRT-5.0.2.6/lib/libnvinfer.so
-#   opencv_videoio
-#   opencv_highgui
+   ${PATH_TO_TENSORRT_LIB}/libnvinfer.so
  )
 
 #############

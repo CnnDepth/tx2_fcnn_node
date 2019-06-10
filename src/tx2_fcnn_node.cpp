@@ -238,7 +238,7 @@ int main( int argc, char** argv )
     {
       ROS_ERROR( "Failed to preprocess" );
 
-      return -1;
+      //return -1;
     }
 
     void* bindings[] = {imgRGB, outImageCUDA};
