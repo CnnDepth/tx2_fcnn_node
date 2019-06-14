@@ -192,6 +192,10 @@ int main( int argc, char** argv )
 
   diMsg.header = std_msgs::Header();
   diMsg.header.frame_id = "base_scan";
+  diMsg.K = ciMsg.K;
+  diMsg.P = ciMsg.P; 
+  diMsg.R = ciMsg.R;
+  diMsg.D = ciMsg.D;  
 
 
   image_transport::ImageTransport it(nh);
@@ -234,7 +238,7 @@ int main( int argc, char** argv )
     {
       ROS_ERROR( "Failed to preprocess" );
 
-      return -1;
+      //return -1;
     }
 
     void* bindings[] = {imgRGB, outImageCUDA};
@@ -245,6 +249,9 @@ int main( int argc, char** argv )
     sensor_msgs::ImagePtr depthMsg = cv_bridge::CvImage( std_msgs::Header(), sensor_msgs::image_encodings::TYPE_32FC1, outDepth ).toImageMsg();
 
     ros::Time timestamp = ros::Time::now();
+
+    msg->header.frame_id = "camera_link";
+    depthMsg->header.frame_id = "base_scan";
 
     msg->header.stamp = timestamp;
     pub.publish(msg);
