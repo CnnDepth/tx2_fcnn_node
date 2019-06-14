@@ -8,7 +8,7 @@ project(tx2_fcnn_node)
 add_compile_options(-std=c++11)
 
 set(PROJECT_OUTPUT_DIR  ${PROJECT_BINARY_DIR}/)
-set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/x86_64/include)
+set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/Thirdparty/fcrn-inference/${CMAKE_SYSTEM_PROCESSOR}/include)
 
 add_subdirectory( Thirdparty/fcrn-inference )
 
