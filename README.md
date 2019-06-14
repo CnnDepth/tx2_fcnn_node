@@ -102,3 +102,17 @@ $ catkin_make
 ```bash
 rosrun tx2_fcnn_node tx2_fcnn_node
 ```
+
+## Sample models
+
+Models pre-trained on NYU Depth v2 dataset is available in [http://pathplanning.ru/public/ECMR-2019/engines/](http://pathplanning.ru/public/ECMR-2019/engines/). The models are stored in UFF format. They can be converted into TensorRT engines using [tensorrt_samples](https://github.com/CnnDepth/tensorrt_samples/tree/master/sampleUffFCRN).
+
+## Troubleshooting
+
+**Stack smashing**
+
+If you run this node on Ubuntu 16.04 or older, the node may fail to start and show `Stack smashing detected` log message. To fix it, remove `XML.*` files in `Thirdparty/fcrn-inference/jetson-utils` directory, and recompile the project.
+
+**Inverted image**
+
+If you run this node on Jetson, RGB and depth image may be shown inverted. To fix it, open `Thirdparty/fcrn-inference/jetson-utils/camera/gstCamera.cpp` file in text editor, go to lines 344-348, and change value of `flipMethod` constant to 0. After editing, recompile the project.
