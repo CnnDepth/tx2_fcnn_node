@@ -166,13 +166,13 @@ int main( int argc, char** argv )
   }
 
 
-//  if( !camera->Open() )
-//  {
-//    ROS_ERROR( "Failed to open camera" );
+  if( !camera->Open() )
+  {
+    ROS_ERROR( "Failed to open camera" );
 
-//    return -1;
-//  }
-
+    return -1;
+  }
+  
   std::string calibFile;
   nh.param<std::string>( "calib_file", calibFile, "tx2_camera_calib.yaml" );
 
