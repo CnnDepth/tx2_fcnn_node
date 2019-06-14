@@ -105,7 +105,7 @@ rosrun tx2_fcnn_node tx2_fcnn_node
 
 ## Sample models
 
-Models pre-trained on NYU Depth v2 dataset is available in [http://pathplanning.ru/public/ECMR-2019/engines/](http://pathplanning.ru/public/ECMR-2019/engines/). The models are stored in UFF format. They can be converted into TensorRT engines using [tensorrt_samples](https://github.com/CnnDepth/tensorrt_samples/tree/master/sampleUffFCRN).
+Models pre-trained on NYU Depth v2 dataset are available in [http://pathplanning.ru/public/ECMR-2019/engines/](http://pathplanning.ru/public/ECMR-2019/engines/). The models are stored in UFF format. They can be converted into TensorRT engines using [tensorrt_samples](https://github.com/CnnDepth/tensorrt_samples/tree/master/sampleUffFCRN).
 
 ## Troubleshooting
 
