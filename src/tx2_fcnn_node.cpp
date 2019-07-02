@@ -6,6 +6,8 @@
 #include <std_msgs/Float64.h>
 #include <camera_calibration_parsers/parse.h>
 
+#include <tx2_fcnn_node/ros_fcnn_inference.hpp>
+
 #include <chrono>
 #include <fstream>
 
@@ -39,7 +41,7 @@ cudaError_t cudaPreImageNetMean(float4* input, size_t inputWidth, size_t inputHe
 				             float* output, size_t outputWidth, size_t outputHeight, const float3& mean_value, cudaStream_t stream);
 
 
-PluginFieldCollection NearestNeighborUpsamplingPluginCreator::mFC{};
+/*PluginFieldCollection NearestNeighborUpsamplingPluginCreator::mFC{};
 std::vector<PluginField> NearestNeighborUpsamplingPluginCreator::mPluginAttributes;
 REGISTER_TENSORRT_PLUGIN( NearestNeighborUpsamplingPluginCreator );
 
@@ -50,7 +52,7 @@ REGISTER_TENSORRT_PLUGIN( StridedSlicePluginCreator );
 PluginFieldCollection InterleavingPluginCreator::mFC{};
 std::vector<PluginField> InterleavingPluginCreator::mPluginAttributes;
 REGISTER_TENSORRT_PLUGIN( InterleavingPluginCreator );
-
+*/
 
 
 int main( int argc, char** argv )
@@ -58,6 +60,8 @@ int main( int argc, char** argv )
   ros::init(argc, argv, PACKAGE_NAME);
   ros::NodeHandle nh("~");
 
+  RosFcnnInference nnInf( nh );
+  nnInf.run();
 
   int inputCameraHeight;
   int inputCameraWidth;
