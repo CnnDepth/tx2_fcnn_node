@@ -3,9 +3,11 @@
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
 
 #include <gstCamera.h>
 #include <NvInfer.h>
+#include <cudaUtility.h>
 
 #include <memory>
 #include <string>
@@ -61,6 +63,25 @@ class RosFcnnInference
         std::string            mEngineInputName;
         std::string            mEngineOutputName;
 
+        float3                 mMean;
+
+        // Images
+        void*                  mImageCPU;
+        void*                  mImageCUDA;
+        void*                  mImageRGBACPU; 
+        void*                  mImageRGBACUDA;
+        void*                  mImageRGB8CPU;
+        void*                  mImageRGB8CUDA;
+
+        float*                 mOutImageCPU;
+        float*                 mOutImageCUDA;
+
+        sensor_msgs::ImageConstPtr     mRosImageMsg;
+        cv_bridge::CvImagePtr          mCvImage;
+
+        sensor_msgs::ImagePtr          mOutRosImageMsg;
+        sensor_msgs::ImagePtr          mOutRosDepthMsg;
+
         // Private methods
         // Initializers
         void                   initializeParameters();
@@ -74,6 +95,8 @@ class RosFcnnInference
         void                   destroyCamera();
 
         void                   grabImageAndPreprocess();
+        void                   process();
+        void                   publishOutput();
 
 };
 

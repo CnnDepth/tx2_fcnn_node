@@ -2,10 +2,11 @@
 #include <tx2_fcnn_node/default_params.hpp>
 
 #include <ros/package.h>
+#include <sensor_msgs/image_encodings.h>
 
 #include <cudaMappedMemory.h>
-#include <cudaUtility.h>
 #include <cudaRGB.h>
+#include <preprocessRGB.h>
 
 #include <slicePlugin.h>
 #include <interleavingPlugin.h>
@@ -40,6 +41,7 @@ RosFcnnInference::RosFcnnInference( ros::NodeHandle& _nh )
         this->initializeInputSource();
     }
     this->initializeEngine();
+    this->allocateCudaMemory();
 }
 
 RosFcnnInference::~RosFcnnInference()
@@ -59,6 +61,8 @@ void RosFcnnInference::run()
 
     while( this->mNodeHandle.ok() )
     {
+        this->grabImageAndPreprocess();
+        ROS_INFO( "OK!" );
         ros::spinOnce();
     }
 }
@@ -99,6 +103,13 @@ void RosFcnnInference::initializeParameters()
     this->mNodeHandle.param<std::string>( "input_name", this->mEngineInputName, DEFAULT_INPUT_NAME );
     this->mNodeHandle.param<std::string>( "output_name", this->mEngineOutputName, DEFAULT_OUTPUT_NAME );
 
+    float meanR, meanG, meanB;
+
+    this->mNodeHandle.param<float>( "mean_r", meanR, DEFAULT_MEAN_R );
+    this->mNodeHandle.param<float>( "mean_g", meanG, DEFAULT_MEAN_G );
+    this->mNodeHandle.param<float>( "mean_b", meanG, DEFAULT_MEAN_B );
+
+    this->mMean = make_float3( meanR, meanG, meanB );
 }
 
 /* void RosFcnnInference::initializeSubscribers()
@@ -180,7 +191,28 @@ void RosFcnnInference::initializeEngine()
 
 void RosFcnnInference::allocateCudaMemory()
 {
+    if( CUDA_FAILED( cudaStreamCreateWithFlags( &mCudaStream, cudaStreamDefault ) ) )
+    {
+        ROS_ERROR( "Failed to create CUDA stream" );
+    }
 
+    if( !cudaAllocMapped( (void**)&mImageCPU, (void**)&mImageCUDA, this->mInputSize ) )
+    {
+        ROS_ERROR( "Cant allocate CUDA memory for mImageCPU" );
+    }
+    if( !cudaAllocMapped( (void**)&mImageRGB8CPU, (void**)&mImageRGB8CUDA, this->mInputSizeUint8 ) )
+    {
+        ROS_ERROR( "Cant allocate CUDA memory for mImageRGB8CPU" );
+    }
+    if( !cudaAllocMapped( (void**)&mImageRGBACPU, (void**)&mImageRGBACUDA, this->mInputImageHeight * this->mInputImageWidth * sizeof( float4 ) ) )
+    {
+        ROS_ERROR( "Cant allocate CUDA memory for mImageRGBA" );
+    }
+    if( !cudaAllocMapped( (void**)&mOutImageCPU, (void**)&mOutImageCUDA, this->mOutputSize ) )
+    {
+        ROS_ERROR( "Cant allocate CUDA memory for mOutImageCPU" );
+    }
+    
 }
 
 void RosFcnnInference::deallocateCudaMemory()
@@ -200,5 +232,69 @@ void RosFcnnInference::destroyCamera()
 
 void RosFcnnInference::grabImageAndPreprocess()
 {
+    if( this->mUseInternalCamera )
+    {
+        if( this->mCamera->Capture( &this->mImageCPU, &this->mImageCUDA, 1000 ) )
+        {
+            ROS_WARN( "Failed to capture frame" );
+        }
+
+        if( this->mCamera->ConvertRGBA( this->mImageCUDA, &this->mImageRGBACPU, true ) )
+        {
+            ROS_WARN( "Failed to convert from NV12 to RGBA" );
+        }
+
+        CUDA( cudaRGBA32ToRGB8( (float4*) this->mImageRGBACPU, (uchar3*) this->mImageRGB8CUDA
+                               , this->mInputImageWidth, this->mInputImageHeight ) );
+    }
+    else
+    {
+        this->mRosImageMsg = ros::topic::waitForMessage<sensor_msgs::Image>( "/image" );
+        this->mCvImage     = cv_bridge::toCvCopy( this->mRosImageMsg, sensor_msgs::image_encodings::RGB8 );
+
+        cudaMemcpy2D( (void**)&mImageRGB8CUDA, this->mInputImageHeight * sizeof(uchar3)
+                    , (void*)this->mCvImage->image.data, this->mCvImage->image.step
+                    , this->mInputImageWidth * sizeof(uchar3), this->mInputImageHeight, cudaMemcpyHostToDevice );
+
+        cudaRGB8ToRGBA32( (uchar3*)mImageRGB8CUDA, (float4*)mImageRGBACUDA, this->mInputImageWidth, this->mInputImageHeight );
+
+    }
+    
+    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACUDA, mInputImageWidth, mInputImageHeight
+                                        , (float*)mImageRGB8CPU, mInputImageWidth, mInputImageHeight
+                                        , make_float3(123.0,123.0,123.0), this->mCudaStream ) ) )
+    {
+        ROS_ERROR( "Failed to preprocess" );
+    }
+
+    ROS_INFO( "Image preprocessed" );
+}
+
+void RosFcnnInference::process()
+{
+    void* bindings[] = {this->mImageRGB8CPU, this->mOutImageCPU};
+    this->mExecutionContext->execute( 1, bindings );
+}
+
+void RosFcnnInference::publishOutput()
+{
+    this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
+                                              , "rgb8"
+                                              , cv::Mat( this->mInputImageHeight
+                                                       , this->mInputImageWidth
+                                                       , CV_8UC3
+                                                       , this->mImageRGB8CPU ) 
+                                              ).toImageMsg();
+    this->mOutRosDepthMsg = cv_bridge::CvImage( std_msgs::Header()
+                                              , sensor_msgs::image_encodings::TYPE_32FC1
+                                              , cv::Mat( this->mInputImageHeight
+                                                       , this->mInputImageWidth
+                                                       , CV_32FC1
+                                                       , this->mOutImageCPU )
+                                              ).toImageMsg();
+
+
+    this->mImagePublisher.publish( this->mOutRosImageMsg );
+    this->mDepthPublisher.publish( this->mOutRosDepthMsg );
 
 }

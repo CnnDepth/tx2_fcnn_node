@@ -20,4 +20,8 @@ const std::string      DEFAULT_CALIB_NAME    = "tx2_camera_calib.yaml";
 const std::string      DEFAULT_INPUT_NAME    = "tf/Placeholder";
 const std::string      DEFAULT_OUTPUT_NAME   = "tf/Reshape";
 
+const float            DEFAULT_MEAN_R        = 123.0;
+const float            DEFAULT_MEAN_G        = 115.0;
+const float            DEFAULT_MEAN_B        = 101.0;
+
 #endif
