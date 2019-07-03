@@ -63,24 +63,29 @@ int main( int argc, char** argv )
   int inputCameraWidth;
   nh.param<int>( "camera_height", inputCameraHeight, DEFAULT_CAMERA_HEIGHT );
   nh.param<int>( "camera_width", inputCameraWidth, DEFAULT_CAMERA_WIDTH );
-
+  
+  int useCamera = 0;
 
   ROS_INFO("Starting tx2_fcnn_node...");
 //===========================
-  gstCamera* camera = gstCamera::Create( inputCameraWidth, inputCameraHeight, -1 );
-  
-  if( !camera )
+  gstCamera* camera;
+  if( useCamera )
   {
-    ROS_ERROR( "Failed to initialize video device" );
+    camera = gstCamera::Create( inputCameraWidth, inputCameraHeight, -1 );
 
-    return -1;
+    if( !camera )
+    {
+      ROS_ERROR( "Failed to initialize video device" );
+
+      return -1;
+    }
+  
+
+    ROS_INFO( "Camera initialized:" );
+    ROS_INFO( "     width: %d", camera->GetWidth() );
+    ROS_INFO( "    height: %d", camera->GetHeight() );
+    ROS_INFO( "     depth: %d", camera->GetPixelDepth() );
   }
-
-  ROS_INFO( "Camera initialized:" );
-  ROS_INFO( "     width: %d", camera->GetWidth() );
-  ROS_INFO( "    height: %d", camera->GetHeight() );
-  ROS_INFO( "     depth: %d", camera->GetPixelDepth() );
-
   std::string engineFile;
   nh.param<std::string>( "engine", engineFile, "test_engine.trt" );
 
@@ -166,13 +171,15 @@ int main( int argc, char** argv )
   }
 
 
-  if( !camera->Open() )
+  if( useCamera )
   {
-    ROS_ERROR( "Failed to open camera" );
+    if( !camera->Open() )
+    {
+      ROS_ERROR( "Failed to open camera" );
 
-    return -1;
+      return -1;
+    }
   }
-  
   std::string calibFile;
   nh.param<std::string>( "calib_file", calibFile, "tx2_camera_calib.yaml" );
 
@@ -215,36 +222,76 @@ int main( int argc, char** argv )
     void* imgCUDA = NULL;
     void* imgRGBA = NULL;
 
-    if( !camera->Capture( &imgCPU, &imgCUDA, 1000 ) )
+    uchar3* imgBufferRGB = NULL;
+    float4* imgBufferRGBAf = NULL;
+
+    sensor_msgs::ImageConstPtr topicImage;
+    cv_bridge::CvImagePtr cvImg;
+
+    if( useCamera )
     {
-      ROS_WARN( "Failed to capture frame" );
+      if( !camera->Capture( &imgCPU, &imgCUDA, 1000 ) )
+      {
+        ROS_WARN( "Failed to capture frame" );
+      }
+
+      if( !camera->ConvertRGBA( imgCUDA, &imgRGBA, true ) )
+      {
+        ROS_WARN( "Failed to convert from NV12 to RGBA" );
+      }
+  
+
+      CUDA( cudaRGBA32ToRGB8( (float4*)imgRGBA, (uchar3*)rgb8ImageCUDA, inputCameraWidth, inputCameraHeight ) );
+    }
+    else
+    {
+      topicImage = ros::topic::waitForMessage<sensor_msgs::Image>( "/image" );
+
+      cvImg = cv_bridge::toCvCopy( topicImage );
+      //cv::cvtColor( cvImg->image, cvImg->image, CV_BGR2RGB );
+//      cvImg->image.convertTo( cvImg->image, CV_16UC4 );
+
+   //   imgRGBA = cvImg->image.data;
+      cudaMalloc( (void**)&imgBufferRGB, inputCameraHeight * sizeof(uchar3) * inputCameraWidth );
+      cudaMemcpy2D((void*)imgBufferRGB, inputCameraWidth * sizeof(uchar3), (void*)cvImg->image.data, cvImg->image.step,
+              inputCameraWidth * sizeof(uchar3), inputCameraHeight, cudaMemcpyHostToDevice);
+      
+      cudaMalloc( (void**)&imgBufferRGBAf, inputCameraWidth * sizeof(float4) * inputCameraHeight );
+
+      cudaRGB8ToRGBA32( imgBufferRGB, imgBufferRGBAf, inputCameraWidth, inputCameraHeight );
+      CUDA( cudaRGBA32ToRGB8( (float4*)imgBufferRGBAf, (uchar3*)rgb8ImageCUDA, inputCameraWidth, inputCameraHeight ) );
     }
 
-    if( !camera->ConvertRGBA( imgCUDA, &imgRGBA, true ) )
-    {
-      ROS_WARN( "Failed to convert from NV12 to RGBA" );
-    }
-
-   CUDA( cudaRGBA32ToRGB8( (float4*)imgRGBA, (uchar3*)rgb8ImageCUDA, camera->GetWidth(), camera->GetHeight() ) );
-
-   cv::Mat rosImage( camera->GetHeight(), camera->GetWidth() , CV_8UC3, rgb8ImageCUDA );
+   cv::Mat rosImage( inputCameraHeight, inputCameraWidth , CV_8UC3, rgb8ImageCUDA );
    sensor_msgs::ImagePtr msg = cv_bridge::CvImage( std_msgs::Header(), "rgb8", rosImage ).toImageMsg();
 
 
 
     const float3 mean_value = make_float3( 123.0, 115.0, 101.0 );
 
-    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, camera->GetWidth(), camera->GetHeight(), (float*)imgRGB, camera->GetWidth(), camera->GetHeight(), mean_value, stream ) ) )
+    if( useCamera )
     {
-      ROS_ERROR( "Failed to preprocess" );
+      if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, inputCameraWidth, inputCameraHeight, (float*)imgRGB, inputCameraWidth, inputCameraHeight, mean_value, stream ) ) )
+      {
+        ROS_ERROR( "Failed to preprocess" );
 
-      //return -1;
+        //return -1;
+      }
+    }
+    else
+    {
+      if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgBufferRGBAf, inputCameraWidth, inputCameraHeight, (float*)imgRGB, inputCameraWidth, inputCameraHeight, mean_value, stream ) ) )
+      {
+        ROS_ERROR( "Failed to preprocess" );
+
+        //return -1;
+      }
     }
 
     void* bindings[] = {imgRGB, outImageCUDA};
     context->execute( 1, bindings );
 
-    cv::Mat outDepth( camera->GetHeight(), camera->GetWidth(), CV_32FC1, outImageCUDA );
+    cv::Mat outDepth( inputCameraHeight, inputCameraWidth, CV_32FC1, outImageCUDA );
 
     sensor_msgs::ImagePtr depthMsg = cv_bridge::CvImage( std_msgs::Header(), sensor_msgs::image_encodings::TYPE_32FC1, outDepth ).toImageMsg();
 
@@ -271,3 +318,4 @@ int main( int argc, char** argv )
 
   return 0;
 }
+
