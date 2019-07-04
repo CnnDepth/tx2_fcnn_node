@@ -3,6 +3,9 @@
 
 #include <ros/package.h>
 #include <sensor_msgs/image_encodings.h>
+#include <camera_calibration_parsers/parse.h>
+
+#include <opencv2/opencv.hpp>
 
 #include <cudaMappedMemory.h>
 #include <cudaRGB.h>
@@ -35,7 +38,7 @@ RosFcnnInference::RosFcnnInference( ros::NodeHandle& _nh )
     ROS_INFO( "Starting tx2_fcnn_node" );
     this->initializeParameters();
     this->initializePublishers();
-    
+    this->setOutputCameraInfo();
     if( this->mUseInternalCamera )
     {
         this->initializeInputSource();
@@ -46,8 +49,8 @@ RosFcnnInference::RosFcnnInference( ros::NodeHandle& _nh )
 
 RosFcnnInference::~RosFcnnInference()
 {
-    deallocateCudaMemory();
-    destroyEngine();
+    this->deallocateCudaMemory();
+    this->destroyEngine();
     if( this->mUseInternalCamera )
     {
         destroyCamera();
@@ -62,6 +65,8 @@ void RosFcnnInference::run()
     while( this->mNodeHandle.ok() )
     {
         this->grabImageAndPreprocess();
+        this->process();
+        this->publishOutput();
         ROS_INFO( "OK!" );
         ros::spinOnce();
     }
@@ -147,6 +152,24 @@ void RosFcnnInference::initializeInputSource()
     }
 }
 
+void RosFcnnInference::setOutputCameraInfo()
+{
+    std::string imageCameraName;
+    if( !camera_calibration_parsers::readCalibration( ros::package::getPath( PACKAGE_NAME ) + "/calib/" + this->mCalibName
+                                               , imageCameraName
+                                               , this->mImageCameraInfo ) )
+    {
+        ROS_ERROR( "Cant read calib file" );
+    }
+
+    this->mImageCameraInfo.header           = std_msgs::Header();
+    this->mImageCameraInfo.header.frame_id  = this->mCameraLink;
+
+    this->mDepthCameraInfo                 = this->mImageCameraInfo;
+    this->mDepthCameraInfo.header          = std_msgs::Header();
+    this->mDepthCameraInfo.header.frame_id = this->mDepthLink;
+}
+
 //WARNIGN: Probably unsafe. Not sure if buffer is needed
 void RosFcnnInference::initializeEngine()
 {
@@ -178,12 +201,15 @@ void RosFcnnInference::initializeEngine()
     nvinfer1::Dims  inputDims    = this->mCudaEngine->getBindingDimensions( inputIndex );
 
     this->mInputSize        = DIMS_C( inputDims ) * DIMS_H( inputDims ) * DIMS_W( inputDims ) * sizeof(float);
-    this->mInputSizeUint8   = DIMS_C( inputDims ) * DIMS_H( inputDims ) * DIMS_W( inputDims ) * sizeof(uint8_t);
+    
+    this->mInputSizeRGB8    = DIMS_C( inputDims ) * DIMS_H( inputDims ) * DIMS_W( inputDims ) * sizeof(uint8_t);
     
     // Get output size
     const int       outputIndex  = this->mCudaEngine->getBindingIndex( this->mEngineOutputName.c_str() );
     nvinfer1::Dims  outputDims   = this->mCudaEngine->getBindingDimensions( outputIndex );
     
+    ROS_INFO( "%d %d", sizeof(uchar3), sizeof(uint8_t) );
+
     this->mOutputSize      = DIMS_C( outputDims ) * DIMS_H( outputDims ) * DIMS_W( outputDims ) * sizeof(float);
 
     ROS_INFO( "DONE!" );
@@ -200,7 +226,7 @@ void RosFcnnInference::allocateCudaMemory()
     {
         ROS_ERROR( "Cant allocate CUDA memory for mImageCPU" );
     }
-    if( !cudaAllocMapped( (void**)&mImageRGB8CPU, (void**)&mImageRGB8CUDA, this->mInputSizeUint8 ) )
+    if( !cudaAllocMapped( (void**)&mImageRGB8CPU, (void**)&mImageRGB8CUDA, this->mInputSizeRGB8 ) )
     {
         ROS_ERROR( "Cant allocate CUDA memory for mImageRGB8CPU" );
     }
@@ -217,17 +243,31 @@ void RosFcnnInference::allocateCudaMemory()
 
 void RosFcnnInference::deallocateCudaMemory()
 {
+    cudaFreeHost( mOutImageCPU );
+    cudaFree( mOutImageCUDA );
+    
+    cudaFreeHost( mImageRGBACPU );
+    cudaFree( mImageRGBACUDA );
 
+    cudaFreeHost( mImageRGB8CPU );
+    cudaFree( mImageRGB8CUDA );
+
+    cudaFreeHost( mImageCPU );
+    cudaFree( mImageCUDA );
+
+    cudaStreamDestroy( mCudaStream );
 }
 
 void RosFcnnInference::destroyEngine()
 {
-
+    this->mExecutionContext->destroy();
+    this->mCudaEngine->destroy();
+    this->mRuntimeInfer->destroy();
 }
 
 void RosFcnnInference::destroyCamera()
 {
-
+    this->mCamera->Close();
 }
 
 void RosFcnnInference::grabImageAndPreprocess()
@@ -250,10 +290,11 @@ void RosFcnnInference::grabImageAndPreprocess()
     else
     {
         this->mRosImageMsg = ros::topic::waitForMessage<sensor_msgs::Image>( "/image" );
-        this->mCvImage     = cv_bridge::toCvCopy( this->mRosImageMsg, sensor_msgs::image_encodings::RGB8 );
+        this->mCvImage     = cv_bridge::toCvCopy( this->mRosImageMsg );
+        cv::cvtColor( this->mCvImage->image, this->mCvImage->image, cv::COLOR_BGR2RGB );
 
-        cudaMemcpy2D( (void**)&mImageRGB8CUDA, this->mInputImageHeight * sizeof(uchar3)
-                    , (void*)this->mCvImage->image.data, this->mCvImage->image.step
+        cudaMemcpy2D( mImageRGB8CUDA, this->mInputImageWidth * sizeof(uchar3)
+                    , (void*)mCvImage->image.data, this->mCvImage->image.step
                     , this->mInputImageWidth * sizeof(uchar3), this->mInputImageHeight, cudaMemcpyHostToDevice );
 
         cudaRGB8ToRGBA32( (uchar3*)mImageRGB8CUDA, (float4*)mImageRGBACUDA, this->mInputImageWidth, this->mInputImageHeight );
@@ -261,8 +302,8 @@ void RosFcnnInference::grabImageAndPreprocess()
     }
     
     if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACUDA, mInputImageWidth, mInputImageHeight
-                                        , (float*)mImageRGB8CPU, mInputImageWidth, mInputImageHeight
-                                        , make_float3(123.0,123.0,123.0), this->mCudaStream ) ) )
+                                        , (float*)mImageRGB8CUDA, mInputImageWidth, mInputImageHeight
+                                        , this->mMean, this->mCudaStream ) ) )
     {
         ROS_ERROR( "Failed to preprocess" );
     }
@@ -272,7 +313,7 @@ void RosFcnnInference::grabImageAndPreprocess()
 
 void RosFcnnInference::process()
 {
-    void* bindings[] = {this->mImageRGB8CPU, this->mOutImageCPU};
+    void* bindings[] = {mImageRGB8CUDA, mOutImageCUDA};
     this->mExecutionContext->execute( 1, bindings );
 }
 
@@ -280,21 +321,28 @@ void RosFcnnInference::publishOutput()
 {
     this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
                                               , "rgb8"
-                                              , cv::Mat( this->mInputImageHeight
-                                                       , this->mInputImageWidth
-                                                       , CV_8UC3
-                                                       , this->mImageRGB8CPU ) 
+                                              , this->mCvImage->image 
                                               ).toImageMsg();
+    
+    cv::Mat outDepth( this->mInputImageHeight, this->mInputImageWidth, CV_32FC1, this->mOutImageCUDA );
     this->mOutRosDepthMsg = cv_bridge::CvImage( std_msgs::Header()
                                               , sensor_msgs::image_encodings::TYPE_32FC1
-                                              , cv::Mat( this->mInputImageHeight
-                                                       , this->mInputImageWidth
-                                                       , CV_32FC1
-                                                       , this->mOutImageCPU )
+                                              , outDepth
                                               ).toImageMsg();
 
+    ros::Time timestamp = ros::Time::now();
 
+    this->mOutRosImageMsg->header.stamp = timestamp;
+    this->mOutRosDepthMsg->header.stamp = timestamp;
+    
+    this->mImageCameraInfo.header.stamp = timestamp;
+    this->mDepthCameraInfo.header.stamp = timestamp;
+
+    this->mImageInfoPublisher.publish( this->mImageCameraInfo );
     this->mImagePublisher.publish( this->mOutRosImageMsg );
+    
+    this->mDepthInfoPublisher.publish( this->mDepthCameraInfo );
     this->mDepthPublisher.publish( this->mOutRosDepthMsg );
+    
 
 }

@@ -42,7 +42,7 @@ class RosFcnnInference
 
         cudaStream_t                       mCudaStream;
         std::size_t                        mInputSize;
-        std::size_t                        mInputSizeUint8;
+        std::size_t                        mInputSizeRGB8;
         std::size_t                        mOutputSize;
         
         std::vector<unsigned char>         mEngineBuffer;
@@ -82,11 +82,15 @@ class RosFcnnInference
         sensor_msgs::ImagePtr          mOutRosImageMsg;
         sensor_msgs::ImagePtr          mOutRosDepthMsg;
 
+        sensor_msgs::CameraInfo        mImageCameraInfo;
+        sensor_msgs::CameraInfo        mDepthCameraInfo;
+
         // Private methods
         // Initializers
         void                   initializeParameters();
         void                   initializePublishers();
         void                   initializeInputSource();
+        void                   setOutputCameraInfo();
         void                   initializeEngine();
         void                   allocateCudaMemory();
         // Deinilializers
