@@ -41,19 +41,6 @@ cudaError_t cudaPreImageNetMean(float4* input, size_t inputWidth, size_t inputHe
 				             float* output, size_t outputWidth, size_t outputHeight, const float3& mean_value, cudaStream_t stream);
 
 
-/*PluginFieldCollection NearestNeighborUpsamplingPluginCreator::mFC{};
-std::vector<PluginField> NearestNeighborUpsamplingPluginCreator::mPluginAttributes;
-REGISTER_TENSORRT_PLUGIN( NearestNeighborUpsamplingPluginCreator );
-
-PluginFieldCollection StridedSlicePluginCreator::mFC{};
-std::vector<PluginField> StridedSlicePluginCreator::mPluginAttributes;
-REGISTER_TENSORRT_PLUGIN( StridedSlicePluginCreator );
-
-PluginFieldCollection InterleavingPluginCreator::mFC{};
-std::vector<PluginField> InterleavingPluginCreator::mPluginAttributes;
-REGISTER_TENSORRT_PLUGIN( InterleavingPluginCreator );
-*/
-
 
 int main( int argc, char** argv )
 {

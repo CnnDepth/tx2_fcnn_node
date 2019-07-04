@@ -19,18 +19,6 @@
 #define DIMS_H(x) x.d[1]
 #define DIMS_W(x) x.d[2]
 
-PluginFieldCollection NearestNeighborUpsamplingPluginCreator::mFC{};
-std::vector<PluginField> NearestNeighborUpsamplingPluginCreator::mPluginAttributes;
-REGISTER_TENSORRT_PLUGIN( NearestNeighborUpsamplingPluginCreator );
-
-PluginFieldCollection StridedSlicePluginCreator::mFC{};
-std::vector<PluginField> StridedSlicePluginCreator::mPluginAttributes;
-REGISTER_TENSORRT_PLUGIN( StridedSlicePluginCreator );
-
-PluginFieldCollection InterleavingPluginCreator::mFC{};
-std::vector<PluginField> InterleavingPluginCreator::mPluginAttributes;
-REGISTER_TENSORRT_PLUGIN( InterleavingPluginCreator );
-
 RosFcnnInference::RosFcnnInference( ros::NodeHandle& _nh )
 : mNodeHandle( _nh )
 , mImageTransport( _nh )
