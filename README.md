@@ -1,6 +1,6 @@
 # tx2_fcnn_node
 
-ROS node for real-time FCNN-based depth reconstruction (as in paper TODO: add url). The platforms are NVidia Jetson TX2 and x86_64 PC with GNU/Linux (aarch64 should work as well, but not tested).
+ROS node for real-time FCNN-based depth reconstruction (as in [paper](https://arxiv.org/abs/1907.07210)). The platforms are NVidia Jetson TX2 and x86_64 PC with GNU/Linux (aarch64 should work as well, but not tested).
 
 ## System requirements
 
