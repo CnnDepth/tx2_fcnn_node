@@ -1,6 +1,8 @@
 # tx2_fcnn_node
 
-ROS node for real-time FCNN-based depth reconstruction (as in [paper](https://arxiv.org/abs/1907.07210)). The platforms are NVidia Jetson TX2 and x86_64 PC with GNU/Linux (aarch64 should work as well, but not tested).
+[![Real-time Vision-based Depth Reconstruction with NVidia Jetson for Monocular SLAM](https://img.youtube.com/vi/ayjvfzm-C7s/maxresdefault.jpg)](https://www.youtube.com/watch?v=ayjvfzm-C7s)
+
+ROS node for real-time FCNN-based depth reconstruction (as in [paper](https://arxiv.org/abs/1907.07210)). The platforms are NVidia Jetson TX2 and x86_64 PC with GNU/Linux (aarch64 should work as well, but not tested). 
 
 ## System requirements
 
