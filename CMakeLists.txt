@@ -205,6 +205,11 @@ endforeach()
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME} src/tx2_fcnn_node.cpp src/ros_fcnn_inference.cpp )
 
+if ( DEFINED BUILD_ENGINE_BUILDER )
+	cuda_add_executable( fcrn_engine_builder Thirdparty/fcrn-inference/fcrnEngineBuilder.cpp )
+	target_link_libraries( fcrn_engine_builder jetson-utils ${PATH_TO_TENSORRT_LIB}/libnvinfer.so common fcrn-camera ${PATH_TO_CUDNN}/libcudnn.so ${PATH_TO_CUBLAS}/libcublas.so nvcaffe_parser )
+endif()
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
