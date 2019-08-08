@@ -55,7 +55,6 @@ void RosFcnnInference::run()
         this->grabImageAndPreprocess();
         this->process();
         this->publishOutput();
-        ROS_INFO( "OK!" );
         ros::spinOnce();
     }
 }
@@ -104,11 +103,6 @@ void RosFcnnInference::initializeParameters()
 
     this->mMean = make_float3( meanR, meanG, meanB );
 }
-
-/* void RosFcnnInference::initializeSubscribers()
-{
-
-}*/
 
 void RosFcnnInference::initializePublishers()
 {
@@ -174,7 +168,6 @@ void RosFcnnInference::initializeEngine()
     std::vector<unsigned char> buffer( std::istreambuf_iterator<char>( engineModel ), {} );
     std::size_t                modelSize = buffer.size() * sizeof( unsigned char );
     
-    //const int outputIndex   = this->mCudaEngine->getBindingIndex( this->mEngineInputName.c_str() );
     this->mRuntimeInfer     = nvinfer1::createInferRuntime( gLogger );
     this->mCudaEngine       = this->mRuntimeInfer->deserializeCudaEngine( buffer.data(), modelSize, nullptr );
     this->mExecutionContext = this->mCudaEngine->createExecutionContext();
