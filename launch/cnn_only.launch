@@ -7,6 +7,7 @@
   </node>
 
   <node pkg="tx2_fcnn_node" type="tx2_fcnn_node" name="tx2_fcnn_node">
+    <param name="calib_file" value="usb_camera_calib.yaml"/>
   </node>
 
 </launch>
