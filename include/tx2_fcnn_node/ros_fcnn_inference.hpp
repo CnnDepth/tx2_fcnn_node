@@ -98,7 +98,7 @@ class RosFcnnInference
         void                   destroyEngine();
         void                   destroyCamera();
 
-        void                   grabImageAndPreprocess();
+        int                    grabImageAndPreprocess();
         void                   process();
         void                   publishOutput();
 

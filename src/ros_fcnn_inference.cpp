@@ -52,9 +52,12 @@ void RosFcnnInference::run()
 
     while( this->mNodeHandle.ok() )
     {
-        this->grabImageAndPreprocess();
-        this->process();
-        this->publishOutput();
+        if( !this->grabImageAndPreprocess() )
+        {
+            this->process();
+            this->publishOutput();
+        }
+        
         ros::spinOnce();
         loopRate.sleep();
     }
@@ -144,7 +147,7 @@ void RosFcnnInference::setOutputCameraInfo()
     {
         ROS_ERROR( "Cant read calib file" );
     }
-
+    
     this->mImageCameraInfo.header           = std_msgs::Header();
     this->mImageCameraInfo.header.frame_id  = this->mCameraLink;
 
@@ -250,13 +253,15 @@ void RosFcnnInference::destroyCamera()
     this->mCamera->Close();
 }
 
-void RosFcnnInference::grabImageAndPreprocess()
+int RosFcnnInference::grabImageAndPreprocess()
 {
     if( this->mUseInternalCamera )
     {
         if( !this->mCamera->Capture( &this->mImageCPU, &this->mImageCUDA, 1000 ) )
         {
             ROS_WARN( "Failed to capture frame" );
+
+            return -1;
         }
 
         if( !this->mCamera->ConvertRGBA( this->mImageCUDA, &this->mImageRGBACPU, true ) )
@@ -266,6 +271,17 @@ void RosFcnnInference::grabImageAndPreprocess()
 
         CUDA( cudaRGBA32ToRGB8( (float4*) this->mImageRGBACPU, (uchar3*) this->mImageRGB8CUDA
                                , this->mInputImageWidth, this->mInputImageHeight ) );
+
+        //!WARNING: DIRTY FIX, NEED TO INVESTIGATE FURTHER
+        //TODO:
+        cv::waitKey(7);
+
+        cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, this->mImageRGB8CPU );
+        
+        this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
+                                                  , "rgb8"
+                                                  , outImage//this->mCvImage->image 
+                                                  ).toImageMsg(); 
     }
     else
     {
@@ -281,7 +297,7 @@ void RosFcnnInference::grabImageAndPreprocess()
 
     }
     
-    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACUDA, mInputImageWidth, mInputImageHeight
+    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACPU, mInputImageWidth, mInputImageHeight
                                         , (float*)mImageRGB8CUDA, mInputImageWidth, mInputImageHeight
                                         , this->mMean, this->mCudaStream ) ) )
     {
@@ -299,12 +315,13 @@ void RosFcnnInference::process()
 
 void RosFcnnInference::publishOutput()
 {
-    this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
-                                              , "rgb8"
-                                              , this->mCvImage->image 
-                                              ).toImageMsg();
+    // cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, (void*)this->mImageRGB8CUDA );
+    // this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
+    //                                           , "rgb8"
+    //                                           , outImage//this->mCvImage->image 
+    //                                           ).toImageMsg();
     
-    cv::Mat outDepth( this->mInputImageHeight, this->mInputImageWidth, CV_32FC1, this->mOutImageCUDA );
+    cv::Mat outDepth( this->mInputImageHeight, this->mInputImageWidth, CV_32FC1, (float4*)this->mOutImageCUDA );
     this->mOutRosDepthMsg = cv_bridge::CvImage( std_msgs::Header()
                                               , sensor_msgs::image_encodings::TYPE_32FC1
                                               , outDepth
@@ -315,6 +332,9 @@ void RosFcnnInference::publishOutput()
     this->mOutRosImageMsg->header.stamp = timestamp;
     this->mOutRosDepthMsg->header.stamp = timestamp;
     
+    this->mOutRosImageMsg->header.frame_id = this->mCameraLink;
+    this->mOutRosDepthMsg->header.frame_id = this->mDepthLink;
+    
     this->mImageCameraInfo.header.stamp = timestamp;
     this->mDepthCameraInfo.header.stamp = timestamp;
 
@@ -323,6 +343,4 @@ void RosFcnnInference::publishOutput()
     
     this->mDepthInfoPublisher.publish( this->mDepthCameraInfo );
     this->mDepthPublisher.publish( this->mOutRosDepthMsg );
-    
-
 }
