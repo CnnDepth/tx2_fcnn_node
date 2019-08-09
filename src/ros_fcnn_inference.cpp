@@ -100,7 +100,7 @@ void RosFcnnInference::initializeParameters()
 
     this->mNodeHandle.param<float>( "mean_r", meanR, DEFAULT_MEAN_R );
     this->mNodeHandle.param<float>( "mean_g", meanG, DEFAULT_MEAN_G );
-    this->mNodeHandle.param<float>( "mean_b", meanG, DEFAULT_MEAN_B );
+    this->mNodeHandle.param<float>( "mean_b", meanB, DEFAULT_MEAN_B );
 
     this->mMean = make_float3( meanR, meanG, meanB );
 }
