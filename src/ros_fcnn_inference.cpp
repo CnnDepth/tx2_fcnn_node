@@ -56,6 +56,7 @@ void RosFcnnInference::run()
         this->process();
         this->publishOutput();
         ros::spinOnce();
+        loopRate.sleep();
     }
 }
 
