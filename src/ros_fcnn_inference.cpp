@@ -280,7 +280,7 @@ int RosFcnnInference::grabImageAndPreprocess()
         
         this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
                                                   , "rgb8"
-                                                  , outImage//this->mCvImage->image 
+                                                  , outImage 
                                                   ).toImageMsg(); 
     }
     else
