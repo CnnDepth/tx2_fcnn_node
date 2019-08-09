@@ -190,8 +190,6 @@ void RosFcnnInference::initializeEngine()
     const int       outputIndex  = this->mCudaEngine->getBindingIndex( this->mEngineOutputName.c_str() );
     nvinfer1::Dims  outputDims   = this->mCudaEngine->getBindingDimensions( outputIndex );
     
-    ROS_INFO( "%d %d", sizeof(uchar3), sizeof(uint8_t) );
-
     this->mOutputSize      = DIMS_C( outputDims ) * DIMS_H( outputDims ) * DIMS_W( outputDims ) * sizeof(float);
 
     ROS_INFO( "DONE!" );
@@ -256,12 +254,12 @@ void RosFcnnInference::grabImageAndPreprocess()
 {
     if( this->mUseInternalCamera )
     {
-        if( this->mCamera->Capture( &this->mImageCPU, &this->mImageCUDA, 1000 ) )
+        if( !this->mCamera->Capture( &this->mImageCPU, &this->mImageCUDA, 1000 ) )
         {
             ROS_WARN( "Failed to capture frame" );
         }
 
-        if( this->mCamera->ConvertRGBA( this->mImageCUDA, &this->mImageRGBACPU, true ) )
+        if( !this->mCamera->ConvertRGBA( this->mImageCUDA, &this->mImageRGBACPU, true ) )
         {
             ROS_WARN( "Failed to convert from NV12 to RGBA" );
         }
