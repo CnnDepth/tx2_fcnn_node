@@ -287,7 +287,11 @@ int RosFcnnInference::grabImageAndPreprocess()
          */
         if( this->mCamera->GetPixelDepth() == 12 )
         {
-            cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, this->mImageRGB8CPU );
+            cv::Mat yuvImage( this->mInputImageHeight * 3/2, this->mInputImageWidth, CV_8UC1, imgCPU );
+            cv::Mat outImage;
+
+            cv::cvtColor( yuvImage, outImage, cv::COLOR_YUV2RGB_NV21 );
+            // cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, this->mImageRGB8CPU );
         
             this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
                                                       , "rgb8"
