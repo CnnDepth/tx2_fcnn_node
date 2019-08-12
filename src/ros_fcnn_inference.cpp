@@ -255,39 +255,79 @@ void RosFcnnInference::destroyCamera()
 
 int RosFcnnInference::grabImageAndPreprocess()
 {
+    void* imgCPU = NULL;
+    void* imgGPU = NULL;
+
+    void* imgRGBA = NULL;
+
     if( this->mUseInternalCamera )
     {
-        if( !this->mCamera->Capture( &this->mImageCPU, &this->mImageCUDA, 1000 ) )
+        if( !this->mCamera->Capture( &imgCPU, &imgGPU, 1000 ) )
         {
             ROS_WARN( "Failed to capture frame" );
 
             return -1;
         }
 
-        if( !this->mCamera->ConvertRGBA( this->mImageCUDA, &this->mImageRGBACPU, true ) )
+        if( !this->mCamera->ConvertRGBA( imgGPU, &imgRGBA, true ) )
         {
             ROS_WARN( "Failed to convert from NV12 to RGBA" );
         }
 
-        CUDA( cudaRGBA32ToRGB8( (float4*) this->mImageRGBACPU, (uchar3*) this->mImageRGB8CUDA
+        CUDA( cudaRGBA32ToRGB8( (float4*) imgRGBA, (uchar3*) this->mImageRGB8CUDA
                                , this->mInputImageWidth, this->mInputImageHeight ) );
 
         //!WARNING: DIRTY FIX, NEED TO INVESTIGATE FURTHER
         //TODO:
-        cv::waitKey(7);
+        // cv::waitKey(7);
 
-        cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, this->mImageRGB8CPU );
+        /* 
+         * depth == 12 means that we're using NVidia Jetson onboard camera,
+         * depth == 24 means that we're using WebCamera 
+         */
+        if( this->mCamera->GetPixelDepth() == 12 )
+        {
+            cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, this->mImageRGB8CPU );
         
-        this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
-                                                  , "rgb8"
-                                                  , outImage 
-                                                  ).toImageMsg(); 
+            this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
+                                                      , "rgb8"
+                                                      , outImage 
+                                                      ).toImageMsg();
+
+            if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACUDA, mInputImageWidth, mInputImageHeight
+                                                , (float*)mImageRGB8CUDA, mInputImageWidth, mInputImageHeight
+                                                , this->mMean, this->mCudaStream ) ) )
+            {
+                ROS_ERROR( "Failed to preprocess" );
+            }    
+        }else
+        if( this->mCamera->GetPixelDepth() == 24 )
+        {
+            cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, imgCPU );
+        
+            this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
+                                                      , "rgb8"
+                                                      , outImage 
+                                                      ).toImageMsg();
+            
+            if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, mInputImageWidth, mInputImageHeight
+                                                , (float*)mImageRGB8CUDA, mInputImageWidth, mInputImageHeight
+                                                , this->mMean, this->mCudaStream ) ) )
+            {
+                ROS_ERROR( "Failed to preprocess" );
+            } 
+        
+        }
     }
     else
     {
         this->mRosImageMsg = ros::topic::waitForMessage<sensor_msgs::Image>( "/image" );
         this->mCvImage     = cv_bridge::toCvCopy( this->mRosImageMsg );
-        cv::cvtColor( this->mCvImage->image, this->mCvImage->image, cv::COLOR_BGR2RGB );
+        
+        if( this->mCvImage->encoding == sensor_msgs::image_encodings::BGR8 )
+        {
+            cv::cvtColor( this->mCvImage->image, this->mCvImage->image, cv::COLOR_BGR2RGB );
+        }
 
         cudaMemcpy2D( mImageRGB8CUDA, this->mInputImageWidth * sizeof(uchar3)
                     , (void*)mCvImage->image.data, this->mCvImage->image.step
@@ -295,13 +335,17 @@ int RosFcnnInference::grabImageAndPreprocess()
 
         cudaRGB8ToRGBA32( (uchar3*)mImageRGB8CUDA, (float4*)mImageRGBACUDA, this->mInputImageWidth, this->mInputImageHeight );
 
-    }
-    
-    if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACPU, mInputImageWidth, mInputImageHeight
-                                        , (float*)mImageRGB8CUDA, mInputImageWidth, mInputImageHeight
-                                        , this->mMean, this->mCudaStream ) ) )
-    {
-        ROS_ERROR( "Failed to preprocess" );
+        this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
+                                                  , "rgb8"
+                                                  , this->mCvImage->image ).toImageMsg();
+
+
+        if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACUDA, mInputImageWidth, mInputImageHeight
+                                            , (float*)mImageRGB8CUDA, mInputImageWidth, mInputImageHeight
+                                            , this->mMean, this->mCudaStream ) ) )
+        {
+            ROS_ERROR( "Failed to preprocess" );
+        }
     }
 
     ROS_INFO( "Image preprocessed" );
