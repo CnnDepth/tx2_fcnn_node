@@ -80,7 +80,8 @@ $ catkin_make --cmake-args -DBUILD_ENGINE_BUILDER=1
 Download UFF model.
 
 ```bash
-$ roscd tx2_fcnn_node/engine
+$ roscd tx2_fcnn_node
+$ mkdir engine && cd engine
 $ wget http://pathplanning.ru/public/ECMR-2019/engines/resnet_nonbt_shortcuts_320x240.uff
 ```
 
@@ -212,7 +213,7 @@ Reads the images from camera or image topic and computes the depth map.
 
     B channel mean value, used during FCNN training.
 
-## Sample models[sample_models]
+## Sample models
 
 Models pre-trained on NYU Depth v2 dataset are available in [http://pathplanning.ru/public/ECMR-2019/engines/](http://pathplanning.ru/public/ECMR-2019/engines/). The models are stored in UFF format. They can be converted into TensorRT engines using [tensorrt_samples](https://github.com/CnnDepth/tensorrt_samples/tree/master/sampleUffFCRN).
 
