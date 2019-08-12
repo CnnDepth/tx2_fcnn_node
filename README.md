@@ -4,6 +4,12 @@
 
 ROS node for real-time FCNN-based depth reconstruction (as in [paper](https://arxiv.org/abs/1907.07210)). The platforms are NVidia Jetson TX2 and x86_64 PC with GNU/Linux (aarch64 should work as well, but not tested). 
 
+## Publications
+
+If you use this work in an academic context, please cite the following publication(s):
+
+TBD
+
 ## System requirements
 
 * Linux-based system with aarch64 or x86_64 architecture or NVidia Jetson TX2.
@@ -48,13 +54,13 @@ $ cd tx2_fcnn_node && git submodule update --init --recursive
 
 Navigate to catkin workspace folder.
 
-**On jetson:**
+a) **On jetson:**
 
 ```console 
 $ catkin_make
 ```
 
-**On x86_64 PC**
+b) **On x86_64 PC**
 ```bash
 $ catkin_make --cmake-args -DPATH_TO_TENSORRT_LIB=/usr/lib/x86_64-linux-gnu \ 
               -DPATH_TO_TENSORRT_INCLUDE=/usr/include -DPATH_TO_CUDNN=/usr/lib/x86_64-linux-gnu \ 
@@ -63,7 +69,30 @@ $ catkin_make --cmake-args -DPATH_TO_TENSORRT_LIB=/usr/lib/x86_64-linux-gnu \
 
 Change the paths accordingly.
 
-4) Run:
+4) Build the TensorRT engine
+
+Compile engine builder.
+
+```bash
+$ catkin_make --cmake-args -DBUILD_ENGINE_BUILDER=1
+```
+
+Download UFF model.
+
+```bash
+$ roscd tx2_fcnn_node
+$ mkdir engine && cd engine
+$ wget http://pathplanning.ru/public/ECMR-2019/engines/resnet_nonbt_shortcuts_320x240.uff
+```
+
+Compile the engine.
+
+```bash
+$ rosrun tx2_fcnn_node fcrn_engine_builder --uff=./resnet_nonbt_shortcuts_320x240.uff --uffInput=tf/Placeholder \
+  --output=tf/Reshape --height=240 --width=320 --engine=./test_engine.trt --fp16
+```
+
+5) Run:
 
 ```bash
 $ roslaunch tx2_fcnn_node cnn_only.launch
@@ -104,6 +133,85 @@ $ catkin_make
 ```bash
 rosrun tx2_fcnn_node tx2_fcnn_node
 ```
+## Nodes
+### tx2_fcnn_node
+Reads the images from camera or image topic and computes the depth map.
+
+#### Subscribed Topics
+* **`/image`** ([sensor_msgs/Image])
+       
+     The input color image for depth reconstruction
+       
+#### Published topics
+* **`/rgb/image`** ([sensor_msgs/Image])
+
+     The output color image.
+       
+* **`/depth/image`** ([sensor_msgs/Image])
+
+    The output depth map. The image is in CV_32FC1.
+
+* **`/rgb/camera_info`** ([sensor_msgs/CameraInfo])
+    
+    Camera info.
+
+* **`/depth/camera_info`** ([sensor_msgs/CameraInfo])
+    
+    "Depth" camera info. Duplicates /rgb/camera_info
+
+#### Parameters
+
+* **`input_width`** (int, default: 320)
+    
+    Input image width for TensorRT engine
+    
+* **`input_height`** (int, default: 240)
+
+    Input image height for TensorRT engine
+    
+* **`use_camera`** (bool, default: true)
+   
+    If true - use internal camera as image source. False - use /image topic as input source.
+    
+* **`camera_mode`** (int, default: -1)
+
+    Only works if use_camera:=true. Sets camera device to be opened. -1 - default device. 
+    
+* **`camera_link`** (string, default: "camera_link")
+  
+     Name of camera's frame_id.
+     
+* **`depth_link`** (string, default: "depth_link")
+
+    Name of depth's frame_id
+    
+* **`engine_name`** (string, default: "test_engine.trt")
+
+    Name of the compiled TensorRT engine file, localed in "engine" folder.
+    
+* **`calib_name`** (string, default: "tx2_camera_calib.yaml")
+
+    Name of calibration file, obrained with camera_calib node. May be either in .yaml or .ini format.
+    
+* **`input_name`** (string, default: "tf/Placeholder")
+
+    Name of the input of TensorRT engine.
+    
+* **`output_name`** (string, default: "tf/Reshape")
+
+    Name of the output of TensorRT engine
+    
+* **`mean_r`** (float, default: 123.0)
+
+    R channel mean value, used during FCNN training.
+    
+* **`mean_g`** (float, default: 115.0)
+
+    G channel mean value, used during FCNN training.
+    
+* **`mean_b`** (float, default: 101.0)
+
+    B channel mean value, used during FCNN training.
 
 ## Sample models
 
@@ -118,3 +226,6 @@ If you run this node on Ubuntu 16.04 or older, the node may fail to start and sh
 **Inverted image**
 
 If you run this node on Jetson, RGB and depth image may be shown inverted. To fix it, open `Thirdparty/fcrn-inference/jetson-utils/camera/gstCamera.cpp` file in text editor, go to lines 344-348, and change value of `flipMethod` constant to 0. After editing, recompile the project.
+
+[sensor_msgs/Image]: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/Image.html
+[sensor_msgs/CameraInfo]: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/CameraInfo.html

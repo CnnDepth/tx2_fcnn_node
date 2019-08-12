@@ -22,7 +22,19 @@
   </node> 
 
   <node pkg="tx2_fcnn_node" type="tx2_fcnn_node" name="tx2_fcnn_node">
-    <param name="calib_file" value="usb_camera_calib.yaml"/>
+    <param name="input_width" value="320"/>
+    <param name="input_height" value="240"/>
+    <param name="use_camera" value="true"/>
+    <param name="camera_mode" value="-1"/>
+    <param name="camera_link" value="camera_link"/>
+    <param name="depth_link" value="depth_link"/>
+    <param name="engine_name" value="test_engine.trt"/>
+    <param name="calib_name" value="tx2_camera_calib.yaml"/>
+    <param name="input_name" value="tf/Placeholder"/>
+    <param name="output_name" value="tf/Reshape"/>
+    <param name="mean_r" value="123.0"/>
+    <param name="mean_g" value="115.0"/>
+    <param name="mean_b" value="101.0"/>
   </node>
 
 </launch>
