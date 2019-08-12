@@ -277,10 +277,8 @@ int RosFcnnInference::grabImageAndPreprocess()
         CUDA( cudaRGBA32ToRGB8( (float4*) imgRGBA, (uchar3*) this->mImageRGB8CUDA
                                , this->mInputImageWidth, this->mInputImageHeight ) );
 
-        //!WARNING: DIRTY FIX, NEED TO INVESTIGATE FURTHER
-        //TODO:
-        // cv::waitKey(7);
 
+        //TODO: This part needs a minor restructurization
         /* 
          * depth == 12 means that we're using NVidia Jetson onboard camera,
          * depth == 24 means that we're using WebCamera 
@@ -290,7 +288,7 @@ int RosFcnnInference::grabImageAndPreprocess()
             cv::Mat yuvImage( this->mInputImageHeight * 3/2, this->mInputImageWidth, CV_8UC1, imgCPU );
             cv::Mat outImage;
 
-            cv::cvtColor( yuvImage, outImage, cv::COLOR_YUV2RGB_NV21 );
+            cv::cvtColor( yuvImage, outImage, cv::COLOR_YUV2RGB_NV12 );
             // cv::Mat outImage( this->mInputImageHeight, this->mInputImageWidth, CV_8UC3, this->mImageRGB8CPU );
         
             this->mOutRosImageMsg = cv_bridge::CvImage( std_msgs::Header()
@@ -298,7 +296,7 @@ int RosFcnnInference::grabImageAndPreprocess()
                                                       , outImage 
                                                       ).toImageMsg();
 
-            if( CUDA_FAILED( cudaPreImageNetMean( (float4*)mImageRGBACUDA, mInputImageWidth, mInputImageHeight
+            if( CUDA_FAILED( cudaPreImageNetMean( (float4*)imgRGBA, mInputImageWidth, mInputImageHeight
                                                 , (float*)mImageRGB8CUDA, mInputImageWidth, mInputImageHeight
                                                 , this->mMean, this->mCudaStream ) ) )
             {
