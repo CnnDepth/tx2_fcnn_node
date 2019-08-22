@@ -89,10 +89,15 @@ class RosFcnnInference
         // Initializers
         void                   initializeParameters();
         void                   initializePublishers();
+        void                   initializeSubscribers();
         void                   initializeInputSource();
         void                   setOutputCameraInfo();
         void                   initializeEngine();
         void                   allocateCudaMemory();
+
+        // Image transport callback
+        void onImageMessage( const sensor_msgs::ImageConstPtr& _image );
+
         // Deinilializers
         void                   deallocateCudaMemory();
         void                   destroyEngine();

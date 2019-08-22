@@ -118,6 +118,11 @@ void RosFcnnInference::initializePublishers()
     this->mDepthInfoPublisher = this->mNodeHandle.advertise<sensor_msgs::CameraInfo>( "/depth/camera_info", 1 );
 }
 
+void RosFcnnInference::initializeSubscribers()
+{
+
+}
+
 void RosFcnnInference::initializeInputSource()
 {
     ROS_INFO( "Initializing camera" );
@@ -221,6 +226,11 @@ void RosFcnnInference::allocateCudaMemory()
     {
         ROS_ERROR( "Cant allocate CUDA memory for mOutImageCPU" );
     }
+    
+}
+
+void RosFcnnInference::onImageMessage( const sensor_msgs::ImageConstPtr _image )
+{
     
 }
 
