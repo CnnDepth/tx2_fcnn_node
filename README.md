@@ -46,8 +46,7 @@ $ sudo apt-get install -y libopencv-calib3d-dev libopencv-dev
 2) Navigate to your catkin workspace and clone the repository:
 
 ```bash
-$ git clone https://github.com/CnnDepth/tx2_fcnn_node.git
-$ cd tx2_fcnn_node && git submodule update --init --recursive
+$ git clone https://github.com/CnnDepth/tx2_fcnn_node.git --recursive
 ```
 
 3) Build the node:
@@ -125,8 +124,7 @@ $ source devel/setup.bash
 4) Build tx2_fcnn_node:
 ```bash
 $ cd src
-$ git clone https://github.com/CnnDepth/tx2_fcnn_node.git
-$ cd tx2_fcnn_node && git submodule update --init --recursive
+$ git clone https://github.com/CnnDepth/tx2_fcnn_node.git --recursive && roscd
 $ catkin_make
 ```
 5) Run the node:
@@ -145,7 +143,7 @@ Reads the images from camera or image topic and computes the depth map.
 #### Published topics
 * **`/rgb/image`** ([sensor_msgs/Image])
 
-     The output color image.
+     The output RGB8 color image.
        
 * **`/depth/image`** ([sensor_msgs/Image])
 
