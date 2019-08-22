@@ -31,6 +31,10 @@ RosFcnnInference::RosFcnnInference( ros::NodeHandle& _nh )
     {
         this->initializeInputSource();
     }
+    else
+    {
+        this->initializeSubscribers();
+    }
     this->initializeEngine();
     this->allocateCudaMemory();
 }
@@ -120,7 +124,7 @@ void RosFcnnInference::initializePublishers()
 
 void RosFcnnInference::initializeSubscribers()
 {
-
+    this->mImageSubscriber = this->mNodeHandle.subscribe( "/image", 5, &RosFcnnInference::onImageMessage, this );
 }
 
 void RosFcnnInference::initializeInputSource()
@@ -229,9 +233,9 @@ void RosFcnnInference::allocateCudaMemory()
     
 }
 
-void RosFcnnInference::onImageMessage( const sensor_msgs::ImageConstPtr _image )
+void RosFcnnInference::onImageMessage( const sensor_msgs::ImageConstPtr& _image )
 {
-    
+    //Do nothing here
 }
 
 void RosFcnnInference::deallocateCudaMemory()
