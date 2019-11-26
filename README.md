@@ -8,7 +8,19 @@ ROS node for real-time FCNN-based depth reconstruction (as in [paper](https://ar
 
 If you use this work in an academic context, please cite the following publication(s):
 
-TBD
+```
+@conference{Bokovoy2019,
+  author={Bokovoy, A. and Muravyev, K. and Yakovlev, K.},
+  title={Real-time vision-based depth reconstruction with NVIDIA jetson},
+  journal={2019 European Conference on Mobile Robots, ECMR 2019 - Proceedings},
+  year={2019},
+  doi={10.1109/ECMR.2019.8870936},
+  art_number={8870936},
+  url={https://www.scopus.com/inward/record.uri?eid=2-s2.0-85074429057&doi=10.1109%2fECMR.2019.8870936&partnerID=40&md5=b87bcba0803147012ee1062f867cc4ef},
+  document_type={Conference Paper},
+  source={Scopus},
+}
+```
 
 ## System requirements
 
