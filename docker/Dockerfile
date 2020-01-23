@@ -18,7 +18,7 @@ RUN sudo apt update && sudo apt install -y lsb-release && \
          build-essential && \
     echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc && \
     source ~/.bashrc && \
-    sudo apt-get install -y libqt4-dev 
+    sudo apt-get install -y libqt4-dev \
          qt4-dev-tools \ 
          libglew-dev \ 
          glew-utils \ 
