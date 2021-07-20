@@ -89,17 +89,17 @@ Compile engine builder.
 $ catkin_make --cmake-args -DBUILD_ENGINE_BUILDER=1
 ```
 
-Download UFF model.
+Download UFF models.
 
 ```bash
 $ roscd tx2_fcnn_node
-$ mkdir engine && cd engine
-$ wget http://pathplanning.ru/public/ECMR-2019/engines/resnet_nonbt_shortcuts_320x240.uff
+$ sh ./download_models.sh
 ```
 
 Compile the engine.
 
 ```bash
+$ cd engine
 $ rosrun tx2_fcnn_node fcrn_engine_builder --uff=./resnet_nonbt_shortcuts_320x240.uff --uffInput=tf/Placeholder \
   --output=tf/Reshape --height=240 --width=320 --engine=./test_engine.trt --fp16
 ```
